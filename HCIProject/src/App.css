@@ -491,3 +491,179 @@ textarea.form-input {
 .status-done {
   color: green;
 }
+
+/* Define root variables for easy theme switching */
+:root {
+  --bg-primary: #f8f9fa;
+  --bg-card: #ffffff;
+  --text-primary: #212529;
+  --text-secondary: #495057;
+  --border-color: #dee2e6;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --accent-color: #007bff;
+  --accent-hover: #0056b3;
+  --btn-secondary-bg: #e9ecef;
+  --btn-secondary-hover: #ced4da;
+}
+
+body.light-mode {
+  --bg-primary: #f8f9fa;
+  --bg-card: #ffffff;
+  --text-primary: #212529;
+  --text-secondary: #495057;
+  --border-color: #dee2e6;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+body.dark {
+  --bg-primary: #121212;
+  --bg-card: #1e1e1e;
+  --text-primary: #e0e0e0;
+  --text-secondary: #b0b0b0;
+  --border-color: #333333;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --accent-color: #0d6efd;
+  --accent-hover: #0b5ed7;
+  --btn-secondary-bg: #2d2d2d;
+  --btn-secondary-hover: #3a3a3a;
+}
+
+/* Apply background to body/main for full theme */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Form Container */
+.add-form-container {
+  max-width: 600px;
+  margin: 3rem auto;
+  padding: 2.5rem;
+  background: var(--bg-card);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.form-header {
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  color: var(--text-primary);
+}
+
+/* Form Groups */
+.add-form .form-group {
+  margin-bottom: 1.8rem;
+}
+
+.add-form label {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+/* Inputs, Textarea, Select */
+.add-form input,
+.add-form textarea,
+.add-form select {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  font-size: 1rem;
+  background-color: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  box-sizing: border-box;
+}
+
+.add-form input:focus,
+.add-form textarea:focus,
+.add-form select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+}
+
+.add-form textarea {
+  min-height: 120px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+/* Placeholder color */
+.add-form input::placeholder,
+.add-form textarea::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+/* Buttons */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.btn-cancel,
+.btn-submit {
+  padding: 0.85rem 1.8rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 100px;
+}
+
+.btn-cancel {
+  background-color: var(--btn-secondary-bg);
+  color: var(--text-primary);
+}
+
+.btn-cancel:hover {
+  background-color: var(--btn-secondary-hover);
+  transform: translateY(-1px);
+}
+
+.btn-submit {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+.btn-submit:hover {
+  background-color: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(13, 110, 253, 0.25);
+}
+
+.btn-submit:active,
+.btn-cancel:active {
+  transform: translateY(0);
+}
+
+/* Responsive improvement */
+@media (max-width: 640px) {
+  .add-form-container {
+    margin: 1.5rem auto;
+    padding: 2rem;
+    border-radius: 10px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .btn-cancel,
+  .btn-submit {
+    width: 100%;
+  }
+}

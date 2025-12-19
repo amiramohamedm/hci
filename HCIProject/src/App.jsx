@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Dashboard from "./pages/Dashboard";
@@ -10,25 +10,38 @@ import "./App.css";
 function App() {
   const [theme, setTheme] = useState("dark");
 
-  const toggleTheme = () => {
+  // Sync theme with body classes on mount and when theme changes
+  useEffect(() => {
     if (theme === "dark") {
-      setTheme("light");
-      document.body.classList.add("light-mode");
-    } else {
-      setTheme("dark");
+      document.body.classList.add("dark");
       document.body.classList.remove("light-mode");
+    } else {
+      document.body.classList.add("light-mode");
+      document.body.classList.remove("dark");
     }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prevTheme) => (prevTheme === "dark" ? "light" : "dark"));
   };
+  const [searchTerm, setSearchTerm] = useState(""); // ← هنا حالة البحث
+
+  // createTask({ projectId: "id", title: "title" });
 
   return (
     <BrowserRouter>
-      <Navbar toggleTheme={toggleTheme} currentTheme={theme} />
+      <Navbar
+        toggleTheme={toggleTheme}
+        currentTheme={theme}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+      />
       <main>
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/project/:id/:name" element={<ProjectTasks />} />
+          <Route path="/" element={<Dashboard searchTerm={searchTerm} />} />
+          <Route path="/project/:id" element={<ProjectTasks searchTerm={searchTerm}/>} />
           <Route path="/add-project" element={<AddProject />} />
-          <Route path="/add-task" element={<AddTask />} />
+          <Route path="/add-task/:projectId" element={<AddTask />} />
         </Routes>
       </main>
     </BrowserRouter>

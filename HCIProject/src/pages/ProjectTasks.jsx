@@ -1,101 +1,130 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { DragDropContext } from "@hello-pangea/dnd";
 import Column from "../components/Column";
+import { TaskStatus } from "../utils/task_status";
+import { getAllTasks, getProjectTasks, saveAllTasks, updateTaskLocal } from "../utils/crud_operations";
 
-function ProjectTasks() {
+function ProjectTasks({searchTerm}) {
   const { id, name } = useParams();
+  const projectId = id;
   const projectName = name ? decodeURIComponent(name) : "Project";
 
-  const [columns, setColumns] = useState({
-    todo: [
-      { id: 1, title: "task1", description: "Create wireframes for the new app", status: "To Do" },
-      { id: 2, title: "task2", description: "Initialize GitHub repository", status: "To Do" },
-    ],
-    inProgress: [
-      { id: 3, title: "task3", description: "Develop login page", status: "In Progress" },
-    ],
-    done: [
-      { id: 4, title: "task4", description: "Set up project repository", status: "Done" },
-    ],
+  const [groups, setGroups] = useState({
+    todo: [],
+    inprogress: [],
+    done: [],
   });
 
-  // Move task
-const moveTask = (taskId, fromColumn, toColumn) => {
-  if (!toColumn) return; // 🚫 Exit if there's no previous/next column
+ useEffect(() => {
+   const fetchTasks = async () => {
+     console.log(`Project id ${projectId}`);
+     
+     const filtered = getProjectTasks(projectId);
 
-  setColumns(prev => {
-    const task = prev[fromColumn].find(t => t.id === taskId);
-    if (!task) return prev;
+     const grouped = {
+       todo: filtered.filter((t) => t.status === TaskStatus.todo),
+       inprogress: filtered.filter((t) => t.status === TaskStatus.inprogress),
+       done: filtered.filter((t) => t.status === TaskStatus.done),
+     };
 
-    const updatedTask = {
-      ...task,
-      status:
-        toColumn === "todo"
-          ? "To Do"
-          : toColumn === "inProgress"
-          ? "In Progress"
-          : "Done",
-    };
+     setGroups(grouped);
+   };
 
-    return {
-      ...prev,
-      [fromColumn]: prev[fromColumn].filter(t => t.id !== taskId),
-      [toColumn]: [...prev[toColumn], updatedTask],
-    };
-  });
-};
+   fetchTasks();
+ }, [projectId]);
 
-  // Delete task
-  const deleteTask = (taskId, fromColumn) => {
-    setColumns(prev => ({
-      ...prev,
-      [fromColumn]: prev[fromColumn].filter(t => t.id !== taskId),
-    }));
+
+  // const updateLocalStorage = (newGroups) => {
+  //   const allTasks = [
+  //     ...newGroups.todo,
+  //     ...newGroups.inprogress,
+  //     ...newGroups.done,
+  //   ];
+  //   localStorage.setItem("tasks", JSON.stringify(allTasks));
+  // };
+
+  const moveTask = (taskId, fromColumn, toColumn) => {
+    if (!toColumn) return;
+      const updatedAllTasks = updateTaskLocal(taskId, toColumn);
+  const filtered = updatedAllTasks.filter((t) => t.projectId === projectId);
+
+     const grouped = {
+       todo: filtered.filter((t) => t.status === TaskStatus.todo),
+       inprogress: filtered.filter((t) => t.status === TaskStatus.inprogress),
+       done: filtered.filter((t) => t.status === TaskStatus.done),
+     };
+
+    setGroups(grouped);
   };
 
-  // Handle drag & drop
-  const handleDragEnd = result => {
+  const filteredGroups = {
+    todo: groups.todo.filter((t) =>
+      t.title.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    inprogress: groups.inprogress.filter((t) =>
+      t.title.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    done: groups.done.filter((t) =>
+      t.title.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+  };
+
+const deleteTask = (taskId) => {
+  if (!window.confirm("Are you sure you want to delete this task?")) return;
+
+  // 🔹 1. جلب كل المهام من localStorage
+  const allTasks = getAllTasks();
+
+  // 🔹 2. حذف المهمة المطلوبة
+  const updatedAllTasks = allTasks.filter((t) => t.id !== taskId);
+
+  // 🔹 3. حفظ التغييرات في localStorage
+  saveAllTasks(updatedAllTasks);
+
+  // 🔹 4. تحديث الـ state لمجموعة الأعمدة للمشروع الحالي
+  const filtered = updatedAllTasks.filter((t) => t.projectId === projectId);
+
+  const grouped = {
+    todo: filtered.filter((t) => t.status === TaskStatus.todo),
+    inprogress: filtered.filter((t) => t.status === TaskStatus.inprogress),
+    done: filtered.filter((t) => t.status === TaskStatus.done),
+  };
+
+  setGroups(grouped);
+};
+
+  const handleDragEnd = (result) => {
     const { source, destination } = result;
     if (!destination) return;
 
     const sourceColumn = source.droppableId;
     const destColumn = destination.droppableId;
 
-    if (sourceColumn === destColumn && source.index === destination.index) return;
+    if (sourceColumn === destColumn && source.index === destination.index)
+      return;
 
-    setColumns(prev => {
-      const sourceTasks = Array.from(prev[sourceColumn]);
-      const [movedTask] = sourceTasks.splice(source.index, 1);
+    // if (sourceColumn === destColumn) {
+    //   const tasks = Array.from(groups[sourceColumn]);
+    //   const [movedTask] = tasks.splice(source.index, 1);
+    //   tasks.splice(destination.index, 0, movedTask);
+    //   const newGroups = { ...groups, [sourceColumn]: tasks };
+    //   setGroups(newGroups);
+    //   updateLocalStorage(newGroups);
+    //   return;
+    // }
+    if (sourceColumn === destColumn && source.index === destination.index)
+      return;
 
-      if (sourceColumn === destColumn) {
-        // Reorder within same column
-        sourceTasks.splice(destination.index, 0, movedTask);
-        return { ...prev, [sourceColumn]: sourceTasks };
-      } else {
-        // Move to another column
-        const destTasks = Array.from(prev[destColumn]);
-        movedTask.status =
-          destColumn === "todo"
-            ? "To Do"
-            : destColumn === "inProgress"
-            ? "In Progress"
-            : "Done";
-        destTasks.splice(destination.index, 0, movedTask);
-
-        return {
-          ...prev,
-          [sourceColumn]: sourceTasks,
-          [destColumn]: destTasks,
-        };
-      }
-    });
+    const movedTask = groups[sourceColumn][source.index];
+    moveTask(movedTask.id, sourceColumn, destColumn);
   };
+
   return (
     <>
-<div className="project-header">
+      <div className="project-header">
         <h1 className="project-title">{projectName}</h1>
-        <Link to="/add-task" className="add-task-button">
+        <Link to={`/add-task/${projectId}`} className="add-task-button">
           + Add Task
         </Link>
       </div>
@@ -104,22 +133,22 @@ const moveTask = (taskId, fromColumn, toColumn) => {
         <div className="board-container">
           <Column
             title="To Do"
-            tasks={columns.todo}
-            columnKey="todo"
+            tasks={filteredGroups.todo}
+            columnKey={TaskStatus.todo}
             moveTask={moveTask}
             deleteTask={deleteTask}
           />
           <Column
             title="In Progress"
-            tasks={columns.inProgress}
-            columnKey="inProgress"
+            tasks={filteredGroups.inprogress}
+            columnKey={TaskStatus.inprogress}
             moveTask={moveTask}
             deleteTask={deleteTask}
           />
           <Column
             title="Done"
-            tasks={columns.done}
-            columnKey="done"
+            tasks={filteredGroups.done}
+            columnKey={TaskStatus.done}
             moveTask={moveTask}
             deleteTask={deleteTask}
           />

@@ -1,12 +1,15 @@
 import { FaArrowLeft, FaArrowRight, FaTrash } from "react-icons/fa";
+import { TaskStatus } from "../utils/task_status";
 
 export default function TaskCard({ task , onMoveNext, onMovePrev, onDelete}) {
 
-  const statusClass = 
-    task.status === "Done" ? "status-done" :
-    task.status === "In Progress" ? "status-inprogress" :
-    "status-todo";
-
+  const statusClass =
+    task.status === TaskStatus.done
+      ? TaskStatus.done
+      : task.status === TaskStatus.inProgress
+      ? TaskStatus.inProgress
+      : TaskStatus.todo;
+      
     return (
     <div className="task-card" >
       <div className="task-header">

@@ -1,7 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-function Navbar({ toggleTheme, currentTheme }) {
+function Navbar({ toggleTheme, currentTheme, searchTerm, setSearchTerm}) {
+
   return (
     <nav className="navbar">
       <div className="navbar-container">
@@ -18,7 +19,9 @@ function Navbar({ toggleTheme, currentTheme }) {
           <input
             type="text"
             placeholder="Search tasks..."
-            className="search-input"
+            className="search-input task-search-input"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
