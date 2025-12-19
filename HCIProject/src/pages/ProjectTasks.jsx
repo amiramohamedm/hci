@@ -59,7 +59,7 @@ function ProjectTasks() {
     );
 
     if (!response.ok) {
-      throw new Error("Failed to update task status");
+      throw new Error(`Failed to update task status statusCode ${response} `);
     }
 
     return response.json();
@@ -72,7 +72,6 @@ function ProjectTasks() {
 
     try {
       // 🔹 POST request
-      //TODO (kaizen) taskId if i get from mongoDB it will be _id
       await updateTaskStatus(taskId, newStatus);
 
       // 🔹 Update UI only if request succeeds
@@ -184,7 +183,7 @@ function ProjectTasks() {
     <>
       <div className="project-header">
         <h1 className="project-title">{projectName}</h1>
-        <Link to="/add-task" className="add-task-button">
+        <Link to={`/add-task/${projectId}`} className="add-task-button">
           + Add Task
         </Link>
       </div>

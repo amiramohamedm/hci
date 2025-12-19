@@ -1,21 +1,16 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { TaskStatus } from "../utils/task_status";
 
 function AddTask() {
+  const {projectId} = useParams();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [projectId, setProjectId] = useState(""); // جديد: لتخزين المشروع المختار
-  const [status, setStatus] = useState("To Do");
+  const [status, setStatus] = useState(TaskStatus.todo);
   const navigate = useNavigate();
 
-  // قائمة المشاريع (بدل ما تكون هاردكود، ممكن تجيبها من API بعدين)
-  const projects = [
-    { id: 1, name: "HCI Project" },
-    { id: 2, name: "React App" },
-    { id: 3, name: "Portfolio Site" },
-  ];
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async(e) => {
     e.preventDefault();
 
     if (!title.trim()) {
@@ -32,34 +27,40 @@ function AddTask() {
     const newTask = {
       title,
       description,
-      projectId: Number(projectId), // مهم: تحويل لـ number
+      projectId: projectId,
       status,
     };
 
-    console.log("New Task Submitted:", newTask);
+    const response = await fetch("http://localhost:3000/api/add-task", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newTask),
+      });
 
-    // في التطبيق الكامل: هنا هتضيف المهمة للـ state العام أو ترسلها للـ backend
+      if (!(response.status == 200 || response.status == 201)) {
+        throw new Error("Failed to add task");
+      }
+      const data = await response.json();
+      console.log("Task added:", data);
+      console.log("New Task Submitted:", newTask);
 
-    // توجيه المستخدم لصفحة المهام الخاصة بالمشروع المختار
-    const selectedProject = projects.find((p) => p.id === Number(projectId));
-    const projectName = selectedProject?.name.replace(/\s+/g, "-") || "unknown"; // للـ URL
+      navigate(`/project/${projectId}`);
 
-    navigate(`/project/${projectId}/${projectName}`);
+
+        
 
     // اختياري: إعادة تعيين النموذج بعد الإضافة
     setTitle("");
     setDescription("");
-    setProjectId("");
-    setStatus("To Do");
+    setStatus(TaskStatus.todo);
   };
 
   return (
     <div className="add-form-container">
       <h2 className="form-header">Add New Task</h2>
       <form onSubmit={handleSubmit} className="add-form">
-
-        
-
         <div className="form-group">
           <label htmlFor="task-title">Task Title <span className="required">*</span></label>
           <input
@@ -90,9 +91,9 @@ function AddTask() {
             value={status}
             onChange={(e) => setStatus(e.target.value)}
           >
-            <option value="To Do">To Do</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Done">Done</option>
+            <option value={TaskStatus.todo}>To Do</option>
+            <option value={TaskStatus.inprogress}>In Progress</option>
+            <option value={TaskStatus.done}>Done</option>
           </select>
         </div>
 
@@ -100,7 +101,7 @@ function AddTask() {
           <button type="button" onClick={() => navigate("/")} className="btn-cancel">
             Cancel
           </button>
-          <button type="submit" className="btn-submit">
+          <button type="submit" className="btn-submit" >
             Add Task
           </button>
         </div>
