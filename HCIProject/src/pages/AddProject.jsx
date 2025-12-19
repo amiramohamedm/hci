@@ -21,12 +21,7 @@ function AddProject() {
       description: description || "No description",
     };
 
-
     addProject(newProject);
-    // إضافة المشروع للحالة
-    // setProjects([...projects, newProject]);
-    
-    // رجوع للـ Dashboard
     navigate("/");
   };
 
@@ -58,7 +53,11 @@ function AddProject() {
         </div>
 
         <div className="form-actions">
-          <button type="button" onClick={() => navigate("/")} className="btn-cancel">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="btn-cancel"
+          >
             Cancel
           </button>
           <button type="submit" className="btn-submit">

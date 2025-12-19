@@ -3,10 +3,9 @@ import { Link, useParams } from "react-router-dom";
 import { DragDropContext } from "@hello-pangea/dnd";
 import Column from "../components/Column";
 import { TaskStatus } from "../utils/task_status";
-import { getAllProjects, getAllTasks } from "../utils/crud_operations";
+import { getAllTasks, getProjectTasks, saveAllTasks, updateTaskLocal } from "../utils/crud_operations";
 
-function ProjectTasks() {
-  //* projectId, projectName
+function ProjectTasks({searchTerm}) {
   const { id, name } = useParams();
   const projectId = id;
   const projectName = name ? decodeURIComponent(name) : "Project";
@@ -16,201 +15,109 @@ function ProjectTasks() {
     inprogress: [],
     done: [],
   });
-useEffect(() => {
-  const fetchProjectsAndTasks = () => {
-    try {
-      const projects = getAllProjects();
-      const allTasks = getAllTasks();
 
-      if (!Array.isArray(projects) || !Array.isArray(allTasks)) {
-        console.error("Projects or tasks is not an array");
-        return;
-      }
+ useEffect(() => {
+   const fetchTasks = async () => {
+     console.log(`Project id ${projectId}`);
+     
+     const filtered = getProjectTasks(projectId);
 
-      const projectIds = projects.map((p) => p.id);
-      const filteredTasks = allTasks.filter((task) =>
-        projectIds.includes(task.projectId)
-      );
+     const grouped = {
+       todo: filtered.filter((t) => t.status === TaskStatus.todo),
+       inprogress: filtered.filter((t) => t.status === TaskStatus.inprogress),
+       done: filtered.filter((t) => t.status === TaskStatus.done),
+     };
 
-      const grouped = {
-        todo: filteredTasks.filter((task) => task.status === "todo"),
-        inprogress: filteredTasks.filter(
-          (task) => task.status === "inprogress"
-        ),
-        done: filteredTasks.filter((task) => task.status === "done"),
-      };
+     setGroups(grouped);
+   };
 
-      setGroups(grouped);
-    } catch (error) {
-      console.error("Error fetching projects or tasks:", error);
-    }
-  };
-
-  fetchProjectsAndTasks();
-}, []);
+   fetchTasks();
+ }, [projectId]);
 
 
-  // useEffect(() => {
-  //   fetch(`http://localhost:3000/api/tasks?projectId=${projectId}`)
-  //     .then((res) => res.json())
-  //     .then((data) => {
-  //       // data هو already grouped object
-  //       setGroups({
-  //         todo: data.todo || [],
-  //         inprogress: data.inprogress || [],
-  //         done: data.done || [],
-  //       });
-  //     })
-  //     .catch((err) => {
-  //       console.error("Failed to fetch tasks:", err);
-  //       setGroups({ todo: [], inprogress: [], done: [] });
-  //     });
-  // }, [projectId]);
+  // const updateLocalStorage = (newGroups) => {
+  //   const allTasks = [
+  //     ...newGroups.todo,
+  //     ...newGroups.inprogress,
+  //     ...newGroups.done,
+  //   ];
+  //   localStorage.setItem("tasks", JSON.stringify(allTasks));
+  // };
 
-  const mapColumnToStatus = (columnKey) => {
-    switch (columnKey) {
-      case TaskStatus.todo:
-        return TaskStatus.todo;
-      case TaskStatus.inprogress:
-        return TaskStatus.inprogress;
-      case TaskStatus.done:
-        return TaskStatus.done;
-      default:
-        return "";
-    }
-  };
-
-  const updateTaskStatus = async (taskId, newStatus) => {
-    const response = await fetch(
-      `http://localhost:3000/api/tasks/${taskId}/status`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status: newStatus }),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Failed to update task status statusCode ${response} `);
-    }
-
-    return response.json();
-  };
-
-  const moveTask = async (taskId, fromColumn, toColumn) => {
+  const moveTask = (taskId, fromColumn, toColumn) => {
     if (!toColumn) return;
+      const updatedAllTasks = updateTaskLocal(taskId, toColumn);
+  const filtered = updatedAllTasks.filter((t) => t.projectId === projectId);
 
-    const newStatus = mapColumnToStatus(toColumn);
+     const grouped = {
+       todo: filtered.filter((t) => t.status === TaskStatus.todo),
+       inprogress: filtered.filter((t) => t.status === TaskStatus.inprogress),
+       done: filtered.filter((t) => t.status === TaskStatus.done),
+     };
 
-    try {
-      // 🔹 POST request
-      await updateTaskStatus(taskId, newStatus);
-
-      // 🔹 Update UI only if request succeeds
-      setGroups((prev) => {
-        const task = prev[fromColumn].find((t) => t._id === taskId);
-        if (!task) return prev;
-
-        const updatedTask = { ...task, status: newStatus };
-
-        return {
-          ...prev,
-          [fromColumn]: prev[fromColumn].filter((t) => t._id !== taskId),
-          [toColumn]: [...prev[toColumn], updatedTask],
-        };
-      });
-    } catch (error) {
-      console.error(error);
-      alert("Failed to move task");
-    }
+    setGroups(grouped);
   };
 
-  const deleteTaskRequest = async (taskId) => {
-    const response = await fetch(`http://localhost:3000/api/tasks/${taskId}`, {
-      method: "DELETE",
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to delete task");
-    }
+  const filteredGroups = {
+    todo: groups.todo.filter((t) =>
+      t.title.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    inprogress: groups.inprogress.filter((t) =>
+      t.title.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    done: groups.done.filter((t) =>
+      t.title.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
   };
 
-  const deleteTask = async (taskId, fromColumn) => {
-    try {
-      if (!window.confirm("Are you sure you want to delete this task?")) return;
+const deleteTask = (taskId) => {
+  if (!window.confirm("Are you sure you want to delete this task?")) return;
 
-      //  DELETE request
-      await deleteTaskRequest(taskId);
+  // 🔹 1. جلب كل المهام من localStorage
+  const allTasks = getAllTasks();
 
-      //  Update UI after success
-      setGroups((prev) => ({
-        ...prev,
-        [fromColumn]: prev[fromColumn].filter((t) => t._id !== taskId),
-      }));
-    } catch (error) {
-      console.error(error);
-      alert("Failed to delete task");
-    }
+  // 🔹 2. حذف المهمة المطلوبة
+  const updatedAllTasks = allTasks.filter((t) => t.id !== taskId);
+
+  // 🔹 3. حفظ التغييرات في localStorage
+  saveAllTasks(updatedAllTasks);
+
+  // 🔹 4. تحديث الـ state لمجموعة الأعمدة للمشروع الحالي
+  const filtered = updatedAllTasks.filter((t) => t.projectId === projectId);
+
+  const grouped = {
+    todo: filtered.filter((t) => t.status === TaskStatus.todo),
+    inprogress: filtered.filter((t) => t.status === TaskStatus.inprogress),
+    done: filtered.filter((t) => t.status === TaskStatus.done),
   };
 
-  const handleDragEnd = async (result) => {
+  setGroups(grouped);
+};
+
+  const handleDragEnd = (result) => {
     const { source, destination } = result;
     if (!destination) return;
 
     const sourceColumn = source.droppableId;
     const destColumn = destination.droppableId;
 
-    if (sourceColumn === destColumn && source.index === destination.index) {
+    if (sourceColumn === destColumn && source.index === destination.index)
       return;
-    }
 
-    // إعادة ترتيب داخل نفس العمود
-    if (sourceColumn === destColumn) {
-      setGroups((prev) => {
-        const tasks = Array.from(prev[sourceColumn]);
-        const [movedTask] = tasks.splice(source.index, 1);
-        tasks.splice(destination.index, 0, movedTask);
-
-        return {
-          ...prev,
-          [sourceColumn]: tasks,
-        };
-      });
+    // if (sourceColumn === destColumn) {
+    //   const tasks = Array.from(groups[sourceColumn]);
+    //   const [movedTask] = tasks.splice(source.index, 1);
+    //   tasks.splice(destination.index, 0, movedTask);
+    //   const newGroups = { ...groups, [sourceColumn]: tasks };
+    //   setGroups(newGroups);
+    //   updateLocalStorage(newGroups);
+    //   return;
+    // }
+    if (sourceColumn === destColumn && source.index === destination.index)
       return;
-    }
 
-    //  نقل بين أعمدة مختلفة
     const movedTask = groups[sourceColumn][source.index];
-
-    const newStatus = mapColumnToStatus(destColumn);
-
-    try {
-      //  API request
-      await updateTaskStatus(movedTask._id || movedTask._id, newStatus);
-
-      // Update UI
-      setGroups((prev) => {
-        const sourceTasks = Array.from(prev[sourceColumn]);
-        sourceTasks.splice(source.index, 1);
-
-        const destTasks = Array.from(prev[destColumn]);
-        destTasks.splice(destination.index, 0, {
-          ...movedTask,
-          status: newStatus,
-        });
-
-        return {
-          ...prev,
-          [sourceColumn]: sourceTasks,
-          [destColumn]: destTasks,
-        };
-      });
-    } catch (error) {
-      console.error(error);
-      alert("Failed to move task");
-    }
+    moveTask(movedTask.id, sourceColumn, destColumn);
   };
 
   return (
@@ -226,22 +133,22 @@ useEffect(() => {
         <div className="board-container">
           <Column
             title="To Do"
-            tasks={groups.todo}
-            columnKey="todo"
+            tasks={filteredGroups.todo}
+            columnKey={TaskStatus.todo}
             moveTask={moveTask}
             deleteTask={deleteTask}
           />
           <Column
             title="In Progress"
-            tasks={groups.inprogress}
-            columnKey="inprogress"
+            tasks={filteredGroups.inprogress}
+            columnKey={TaskStatus.inprogress}
             moveTask={moveTask}
             deleteTask={deleteTask}
           />
           <Column
             title="Done"
-            tasks={groups.done}
-            columnKey="done"
+            tasks={filteredGroups.done}
+            columnKey={TaskStatus.done}
             moveTask={moveTask}
             deleteTask={deleteTask}
           />

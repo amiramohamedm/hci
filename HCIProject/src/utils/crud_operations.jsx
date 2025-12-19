@@ -1,10 +1,16 @@
 // src/utils/taskStorage.jsx
-export const getAllTasks = () => {
+export function getAllTasks () {
   try {
     const data = localStorage.getItem("tasks");
-    console.log(data);
-    return data ? JSON.parse(data) : [];
+    console.log(`Data  ${data}`);
+    console.log("Type of data:", typeof data); // يطبع نوع المتغير
+
+    const returnedData = data ? JSON.parse(data) : [];
+    console.log("Type of data:", typeof returnedData); // يطبع نوع المتغير
+    console.log(Array.isArray(returnedData)); // true (لأنها مصفوفة)
     
+
+    return returnedData;
   } catch (error) {
     console.error("Error parsing projects from localStorage:", error);
     localStorage.removeItem("tasks"); // remove corrupted data
@@ -18,7 +24,7 @@ export const saveAllTasks = (tasks) => {
 
 export const getProjectTasks = (projectId) => {
   const allTasks = getAllTasks();
-  return allTasks[projectId] || [];
+  return allTasks.filter((task) => task.projectId === projectId);
 };
 
 export const saveProjectTasks = (projectId, tasks) => {
@@ -28,12 +34,12 @@ export const saveProjectTasks = (projectId, tasks) => {
 };
 
 export const addTaskLocal = (newTask) => {
-  var allTasks = getAllTasks();
+  const allTasks = getAllTasks();
+  console.log(`allTasks : ${allTasks}`);
   
-      allTasks = [...allTasks, newTask];
-  
-      saveAllTasks(allTasks);
+  saveAllTasks([...allTasks, newTask]);
 };
+
 
 
 export const getAllProjects = () => {
@@ -55,3 +61,15 @@ export const addProject = (newProject) => {
   localStorage.setItem("projects", JSON.stringify(allProjects)); // save as JSON
 };
 
+
+
+export const updateTaskLocal = (taskId, newStatus) => {
+  const allTasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+  const updatedTasks = allTasks.map((task) =>
+    task.id === taskId ? { ...task, status: newStatus } : task
+  );
+
+  localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+  return updatedTasks;
+};

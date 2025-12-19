@@ -1,64 +1,33 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { TaskStatus } from "../utils/task_status";
 import { v4 as uuidv4 } from "uuid";
-import { addTaskLocal} from "../utils/crud_operations";
+import { addTaskLocal } from "../utils/crud_operations";
+import { TaskStatus } from "../utils/task_status";
 
 function AddTask() {
-  const {projectId} = useParams();
+  const { projectId } = useParams();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState(TaskStatus.todo);
   const navigate = useNavigate();
-    
-  const handleSubmit = async(e) => {
-    e.preventDefault();
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
     if (!title.trim()) {
       alert("Task title is required!");
       return;
     }
 
-    if (!projectId) {
-      alert("Please select a project!");
-      return;
-    }
-
-    // هنا الداتا كلها بتتبعت معًا، بما فيها projectId
     const newTask = {
       id: uuidv4(),
       title,
       description,
-      projectId: projectId,
+      projectId,
       status,
-    };  
-    //* get all tasks then add new task to the right project 
-    addTaskLocal(newTask)
+    };
 
-    // const response = await fetch("http://localhost:3000/api/add-task", {
-    //     method: "POST",
-    //     headers: {
-    //       "Content-Type": "application/json",
-    //     },
-    //     body: JSON.stringify(newTask),
-    //   });
-
-    //   if (!(response.status == 200 || response.status == 201)) {
-    //     throw new Error("Failed to add task");
-    //   }
-    //   const data = await response.json();
-    //   console.log("Task added:", data);
-      console.log("New Task Submitted:", newTask);
-
-      navigate(`/project/${projectId}`);
-
-
-        
-
-    // اختياري: إعادة تعيين النموذج بعد الإضافة
-    setTitle("");
-    setDescription("");
-    setStatus(TaskStatus.todo);
+    addTaskLocal(newTask);
+    navigate(`/project/${projectId}`);
   };
 
   return (
@@ -66,7 +35,9 @@ function AddTask() {
       <h2 className="form-header">Add New Task</h2>
       <form onSubmit={handleSubmit} className="add-form">
         <div className="form-group">
-          <label htmlFor="task-title">Task Title <span className="required">*</span></label>
+          <label htmlFor="task-title">
+            Task Title <span className="required">*</span>
+          </label>
           <input
             type="text"
             id="task-title"
@@ -102,10 +73,14 @@ function AddTask() {
         </div>
 
         <div className="form-actions">
-          <button type="button" onClick={() => navigate("/")} className="btn-cancel">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="btn-cancel"
+          >
             Cancel
           </button>
-          <button type="submit" className="btn-submit" >
+          <button type="submit" className="btn-submit">
             Add Task
           </button>
         </div>

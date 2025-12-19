@@ -14,7 +14,7 @@ export default function Column({ title, tasks,columnKey, moveTask, deleteTask  }
           <h2 className="column-header">{title}</h2>
 
           {tasks.map((task, index) => (
-            <Draggable key={task._id} draggableId={task._id.toString()} index={index}>
+            <Draggable key={task.id} draggableId={task.id.toString()} index={index}>
               {(provided) => (
                 <div
                   ref={provided.innerRef}
@@ -24,20 +24,20 @@ export default function Column({ title, tasks,columnKey, moveTask, deleteTask  }
                   <TaskCard
                     task={task}
                     onMoveNext={() =>
-                      moveTask(task._id, columnKey, columnKey === "todo"
+                      moveTask(task.id, columnKey, columnKey === "todo"
                         ? "inProgress"
                         : columnKey === "inProgress"
                         ? "done"
                         : null)
                     }
                     onMovePrev={() =>
-                      moveTask(task._id, columnKey, columnKey === "done"
+                      moveTask(task.id, columnKey, columnKey === "done"
                         ? "inProgress"
                         : columnKey === "inProgress"
                         ? "todo"
                         : null)
                     }
-                    onDelete={() => deleteTask(task._id, columnKey)}
+                    onDelete={() => deleteTask(task.id, columnKey)}
                   />
                 </div>
               )}

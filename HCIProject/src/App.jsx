@@ -10,7 +10,6 @@ import "./App.css";
 function App() {
   const [theme, setTheme] = useState("dark");
 
-
   // Sync theme with body classes on mount and when theme changes
   useEffect(() => {
     if (theme === "dark") {
@@ -25,28 +24,24 @@ function App() {
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === "dark" ? "light" : "dark"));
   };
+  const [searchTerm, setSearchTerm] = useState(""); // ← هنا حالة البحث
 
   // createTask({ projectId: "id", title: "title" });
 
-
   return (
     <BrowserRouter>
-      <Navbar toggleTheme={toggleTheme} currentTheme={theme} />
+      <Navbar
+        toggleTheme={toggleTheme}
+        currentTheme={theme}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+      />
       <main>
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route
-            path="/project/:id"
-            element={<ProjectTasks />}
-          />
-          <Route
-            path="/add-project"
-            element={<AddProject />}
-          />
-          <Route
-            path="/add-task/:projectId"
-            element={<AddTask />}
-          />
+          <Route path="/" element={<Dashboard searchTerm={searchTerm} />} />
+          <Route path="/project/:id" element={<ProjectTasks searchTerm={searchTerm}/>} />
+          <Route path="/add-project" element={<AddProject />} />
+          <Route path="/add-task/:projectId" element={<AddTask />} />
         </Routes>
       </main>
     </BrowserRouter>
