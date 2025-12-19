@@ -1,4 +1,18 @@
 // src/utils/taskStorage.jsx
+
+export const fetchAndStoreProjects = async() => {
+  try{
+  const response = await fetch('https://6945bae4ed253f51719c2e54.mockapi.io/api/v1/projects');
+  if(!response.ok)
+    throw new Error('cannot fetch data from the API');
+  const data = await response.json();
+  localStorage.setItem("projects", JSON.stringify(data));
+
+    return data;
+} catch (error) {
+    console.error("Error fetching projects from MockAPI:", error);
+    return [];
+}};
 export function getAllTasks () {
   try {
     const data = localStorage.getItem("tasks");
@@ -10,7 +24,7 @@ export function getAllTasks () {
     console.log(Array.isArray(returnedData)); // true (لأنها مصفوفة)
     
 
-    return returnedData;
+    return Array.isArray(returnedData) ? returnedData : [];
   } catch (error) {
     console.error("Error parsing projects from localStorage:", error);
     localStorage.removeItem("tasks"); // remove corrupted data
@@ -34,10 +48,22 @@ export const saveProjectTasks = (projectId, tasks) => {
 };
 
 export const addTaskLocal = (newTask) => {
+  // 1️⃣ Add to tasks array
   const allTasks = getAllTasks();
-  console.log(`allTasks : ${allTasks}`);
-  
   saveAllTasks([...allTasks, newTask]);
+
+  // 2️⃣ Add to the project's tasks array
+  const allProjects = getAllProjects();
+  const updatedProjects = allProjects.map(project => {
+    if (project.id === newTask.projectId) {
+      return {
+        ...project,
+        tasks: [...(project.tasks || []), newTask]
+      };
+    }
+    return project;
+  });
+  localStorage.setItem("projects", JSON.stringify(updatedProjects));
 };
 
 
@@ -64,12 +90,27 @@ export const addProject = (newProject) => {
 
 
 export const updateTaskLocal = (taskId, newStatus) => {
+  // 1️⃣ Update tasks array
   const allTasks = JSON.parse(localStorage.getItem("tasks")) || [];
-
   const updatedTasks = allTasks.map((task) =>
     task.id === taskId ? { ...task, status: newStatus } : task
   );
-
   localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+
+  // 2️⃣ Update the task inside its project
+  const allProjects = getAllProjects();
+  const updatedProjects = allProjects.map(project => {
+    if (project.tasks && project.tasks.some(t => t.id === taskId)) {
+      return {
+        ...project,
+        tasks: project.tasks.map(task =>
+          task.id === taskId ? { ...task, status: newStatus } : task
+        )
+      };
+    }
+    return project;
+  });
+  localStorage.setItem("projects", JSON.stringify(updatedProjects));
+
   return updatedTasks;
 };

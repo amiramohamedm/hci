@@ -480,15 +480,15 @@ textarea.form-input {
 .task-status {
   font-weight: bold;
 }
-.status-todo {
+.todo {
   color: gray;
 }
 
-.status-inprogress {
+.inprogress {
   color: orange;
 }
 
-.status-done {
+.done {
   color: green;
 }
 

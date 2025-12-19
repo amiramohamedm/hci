@@ -3,13 +3,13 @@ import { Link, useParams } from "react-router-dom";
 import { DragDropContext } from "@hello-pangea/dnd";
 import Column from "../components/Column";
 import { TaskStatus } from "../utils/task_status";
-import { getAllTasks, getProjectTasks, saveAllTasks, updateTaskLocal } from "../utils/crud_operations";
+import { getAllTasks, getAllProjects, saveAllTasks, updateTaskLocal } from "../utils/crud_operations";
 
 function ProjectTasks({searchTerm}) {
-  const { id, name } = useParams();
+  const { id } = useParams();
   const projectId = id;
-  const projectName = name ? decodeURIComponent(name) : "Project";
-
+  const project = getAllProjects().find(p => p.id === projectId);
+  const projectName = project?.name || "Project";
   const [groups, setGroups] = useState({
     todo: [],
     inprogress: [],
@@ -19,12 +19,13 @@ function ProjectTasks({searchTerm}) {
  useEffect(() => {
    const fetchTasks = async () => {
      console.log(`Project id ${projectId}`);
-     
-     const filtered = getProjectTasks(projectId);
+     const project = getAllProjects().find(p => p.id === projectId);
+     console.log(`Project fetched: ${JSON.stringify(project)}`);
+     const filtered = project?.tasks || [];
 
      const grouped = {
        todo: filtered.filter((t) => t.status === TaskStatus.todo),
-       inprogress: filtered.filter((t) => t.status === TaskStatus.inprogress),
+       inprogress: filtered.filter((t) => t.status === TaskStatus.inProgress),
        done: filtered.filter((t) => t.status === TaskStatus.done),
      };
 
@@ -44,19 +45,29 @@ function ProjectTasks({searchTerm}) {
   //   localStorage.setItem("tasks", JSON.stringify(allTasks));
   // };
 
-  const moveTask = (taskId, fromColumn, toColumn) => {
-    if (!toColumn) return;
-      const updatedAllTasks = updateTaskLocal(taskId, toColumn);
-  const filtered = updatedAllTasks.filter((t) => t.projectId === projectId);
+const moveTask = (taskId, toStatus) => {
+  if (!toStatus) return;
 
-     const grouped = {
-       todo: filtered.filter((t) => t.status === TaskStatus.todo),
-       inprogress: filtered.filter((t) => t.status === TaskStatus.inprogress),
-       done: filtered.filter((t) => t.status === TaskStatus.done),
-     };
+  // 1️⃣ Update task status in both localStorage locations
+  updateTaskLocal(taskId, toStatus);
 
-    setGroups(grouped);
+  // 2️⃣ Re-fetch the UPDATED project (not just tasks)
+  const allProjects = getAllProjects();
+  const updatedProject = allProjects.find(p => p.id === projectId);
+  
+  // 3️⃣ Filter only this project's tasks from the project object
+  const filtered = updatedProject?.tasks || [];
+
+  // 4️⃣ Regroup
+  const grouped = {
+    todo: filtered.filter((t) => t.status === TaskStatus.todo),
+    inprogress: filtered.filter((t) => t.status === TaskStatus.inProgress),
+    done: filtered.filter((t) => t.status === TaskStatus.done),
   };
+
+
+  setGroups(grouped);
+};
 
   const filteredGroups = {
     todo: groups.todo.filter((t) =>
@@ -73,37 +84,48 @@ function ProjectTasks({searchTerm}) {
 const deleteTask = (taskId) => {
   if (!window.confirm("Are you sure you want to delete this task?")) return;
 
-  // 🔹 1. جلب كل المهام من localStorage
+  // 🔹 1. Delete from tasks array
   const allTasks = getAllTasks();
-
-  // 🔹 2. حذف المهمة المطلوبة
   const updatedAllTasks = allTasks.filter((t) => t.id !== taskId);
-
-  // 🔹 3. حفظ التغييرات في localStorage
   saveAllTasks(updatedAllTasks);
 
-  // 🔹 4. تحديث الـ state لمجموعة الأعمدة للمشروع الحالي
-  const filtered = updatedAllTasks.filter((t) => t.projectId === projectId);
+  // 🔹 2. Delete from project
+  const allProjects = getAllProjects();
+  const updatedProjects = allProjects.map(project => {
+    if (project.id === projectId && project.tasks) {
+      return {
+        ...project,
+        tasks: project.tasks.filter(t => t.id !== taskId)
+      };
+    }
+    return project;
+  });
+  localStorage.setItem("projects", JSON.stringify(updatedProjects));
 
+  // 🔹 3. Re-fetch the UPDATED project (not getAllTasks)
+  const updatedProject = updatedProjects.find(p => p.id === projectId);
+  const filtered = updatedProject?.tasks || [];
+
+  // 🔹 4. Update UI
   const grouped = {
     todo: filtered.filter((t) => t.status === TaskStatus.todo),
-    inprogress: filtered.filter((t) => t.status === TaskStatus.inprogress),
+    inprogress: filtered.filter((t) => t.status === TaskStatus.inProgress),
     done: filtered.filter((t) => t.status === TaskStatus.done),
   };
-
   setGroups(grouped);
 };
-
   const handleDragEnd = (result) => {
     const { source, destination } = result;
     if (!destination) return;
+  if (!destination) return;
 
-    const sourceColumn = source.droppableId;
-    const destColumn = destination.droppableId;
+  const sourceColumn = source.droppableId;
+  const destColumn = destination.droppableId;
 
-    if (sourceColumn === destColumn && source.index === destination.index)
-      return;
+  if (sourceColumn === destColumn && source.index === destination.index) return;
 
+  const movedTask = groups[sourceColumn][source.index];
+  moveTask(movedTask.id, destColumn); 
     // if (sourceColumn === destColumn) {
     //   const tasks = Array.from(groups[sourceColumn]);
     //   const [movedTask] = tasks.splice(source.index, 1);
@@ -113,11 +135,7 @@ const deleteTask = (taskId) => {
     //   updateLocalStorage(newGroups);
     //   return;
     // }
-    if (sourceColumn === destColumn && source.index === destination.index)
-      return;
 
-    const movedTask = groups[sourceColumn][source.index];
-    moveTask(movedTask.id, sourceColumn, destColumn);
   };
 
   return (
@@ -141,7 +159,7 @@ const deleteTask = (taskId) => {
           <Column
             title="In Progress"
             tasks={filteredGroups.inprogress}
-            columnKey={TaskStatus.inprogress}
+            columnKey={TaskStatus.inProgress}
             moveTask={moveTask}
             deleteTask={deleteTask}
           />
