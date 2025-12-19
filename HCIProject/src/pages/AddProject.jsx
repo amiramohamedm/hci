@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { v4 as uuidv4 } from "uuid";
+import { addProject } from "../utils/crud_operations";
 
-function AddProject({ projects, setProjects }) {
+function AddProject() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const navigate = useNavigate();
@@ -13,16 +15,17 @@ function AddProject({ projects, setProjects }) {
       return;
     }
 
-    // إنشاء مشروع جديد بـ ID تلقائي
     const newProject = {
-      id: projects.length > 0 ? Math.max(...projects.map(p => p.id)) + 1 : 1,
+      id: uuidv4(),
       name: title,
       description: description || "No description",
     };
 
-    // إضافة المشروع للحالة
-    setProjects([...projects, newProject]);
 
+    addProject(newProject);
+    // إضافة المشروع للحالة
+    // setProjects([...projects, newProject]);
+    
     // رجوع للـ Dashboard
     navigate("/");
   };

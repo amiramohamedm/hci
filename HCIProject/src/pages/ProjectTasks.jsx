@@ -1,8 +1,9 @@
-import {useState , useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { DragDropContext } from "@hello-pangea/dnd";
 import Column from "../components/Column";
-import  {TaskStatus}  from "../utils/task_status";
+import { TaskStatus } from "../utils/task_status";
+import { getAllProjects, getAllTasks } from "../utils/crud_operations";
 
 function ProjectTasks() {
   //* projectId, projectName
@@ -15,23 +16,56 @@ function ProjectTasks() {
     inprogress: [],
     done: [],
   });
+useEffect(() => {
+  const fetchProjectsAndTasks = () => {
+    try {
+      const projects = getAllProjects();
+      const allTasks = getAllTasks();
 
-  useEffect(() => {
-    fetch(`http://localhost:3000/api/tasks?projectId=${projectId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        // data هو already grouped object
-        setGroups({
-          todo: data.todo || [],
-          inprogress: data.inprogress || [],
-          done: data.done || [],
-        });
-      })
-      .catch((err) => {
-        console.error("Failed to fetch tasks:", err);
-        setGroups({ todo: [], inprogress: [], done: [] });
-      });
-  }, [projectId]);
+      if (!Array.isArray(projects) || !Array.isArray(allTasks)) {
+        console.error("Projects or tasks is not an array");
+        return;
+      }
+
+      const projectIds = projects.map((p) => p.id);
+      const filteredTasks = allTasks.filter((task) =>
+        projectIds.includes(task.projectId)
+      );
+
+      const grouped = {
+        todo: filteredTasks.filter((task) => task.status === "todo"),
+        inprogress: filteredTasks.filter(
+          (task) => task.status === "inprogress"
+        ),
+        done: filteredTasks.filter((task) => task.status === "done"),
+      };
+
+      setGroups(grouped);
+    } catch (error) {
+      console.error("Error fetching projects or tasks:", error);
+    }
+  };
+
+  fetchProjectsAndTasks();
+}, []);
+
+
+  // useEffect(() => {
+  //   fetch(`http://localhost:3000/api/tasks?projectId=${projectId}`)
+  //     .then((res) => res.json())
+  //     .then((data) => {
+  //       // data هو already grouped object
+  //       setGroups({
+  //         todo: data.todo || [],
+  //         inprogress: data.inprogress || [],
+  //         done: data.done || [],
+  //       });
+  //     })
+  //     .catch((err) => {
+  //       console.error("Failed to fetch tasks:", err);
+  //       setGroups({ todo: [], inprogress: [], done: [] });
+  //     });
+  // }, [projectId]);
 
   const mapColumnToStatus = (columnKey) => {
     switch (columnKey) {

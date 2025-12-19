@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { TaskStatus } from "../utils/task_status";
+import { v4 as uuidv4 } from "uuid";
+import { addTaskLocal} from "../utils/crud_operations";
 
 function AddTask() {
   const {projectId} = useParams();
@@ -8,8 +10,7 @@ function AddTask() {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState(TaskStatus.todo);
   const navigate = useNavigate();
-
-
+    
   const handleSubmit = async(e) => {
     e.preventDefault();
 
@@ -25,25 +26,28 @@ function AddTask() {
 
     // هنا الداتا كلها بتتبعت معًا، بما فيها projectId
     const newTask = {
+      id: uuidv4(),
       title,
       description,
       projectId: projectId,
       status,
-    };
+    };  
+    //* get all tasks then add new task to the right project 
+    addTaskLocal(newTask)
 
-    const response = await fetch("http://localhost:3000/api/add-task", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newTask),
-      });
+    // const response = await fetch("http://localhost:3000/api/add-task", {
+    //     method: "POST",
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //     },
+    //     body: JSON.stringify(newTask),
+    //   });
 
-      if (!(response.status == 200 || response.status == 201)) {
-        throw new Error("Failed to add task");
-      }
-      const data = await response.json();
-      console.log("Task added:", data);
+    //   if (!(response.status == 200 || response.status == 201)) {
+    //     throw new Error("Failed to add task");
+    //   }
+    //   const data = await response.json();
+    //   console.log("Task added:", data);
       console.log("New Task Submitted:", newTask);
 
       navigate(`/project/${projectId}`);
